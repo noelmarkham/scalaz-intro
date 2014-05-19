@@ -79,10 +79,10 @@ import Scalaz._
 					<p class="fragment"><code>.option</code> on <code>boolean</code> types:
 					<pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
 scala> val boolT = 6 < 10
-booleanT: Boolean = true
+boolT: Boolean = true
 
 scala> val boolF = 6 > 10
-booleanF: Boolean = false
+boolF: Boolean = false
 
 scala> boolT.option("cake")
 res0: Option[String] = Some(cake)
@@ -169,7 +169,7 @@ trait Ord[T] {
   def compare(a:T, b:T): Boolean
 }
                     </code></pre>
-                    <p class="fragment">Next, an <code>Ord</code> instance <b class="fragment">for a specific type:</b></p>
+                    <p class="fragment">Next, an <code>Ord</code> instance <i class="fragment">for a specific type:</i></p>
                     <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
 object intOrd extends Ord[Int] {
   def compare(a:Int, b:Int): Boolean = a <= b
@@ -206,6 +206,10 @@ res4: TODO
                 </section>
                 <section>
                     <h2>Typeclasses</h2>
+                    <p>If this is new/daunting/confusing, take a look at Java's <code>Comparator</code> interface and its uses.</p>
+                </section>
+                <section>
+                    <h2>Typeclasses</h2>
                     <p>Scalaz defines many type classes, including:</p>
                     <ul>
                         <li>Equal</li>
@@ -218,22 +222,133 @@ res4: TODO
                 </section>
                 <section>
                     <h2>Typeclasses</h2>
+                    <h5 class="fragment">Equal</h5>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> "hello" === "world"
+res3: Boolean = false
+                    </code></pre>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> Some("cake") === "cake"
+                    </code></pre>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+&lt;console&gt;:14: error:
+      could not find implicit value for parameter F0: scalaz.Equal[java.io.Serializable]
+
+         Some("cake") === "cake"
+             ^
+                    </code></pre>
+                    <p class="fragment">It doesn't even compile</p>
+                    <p class="fragment">Type safety FTW!</p>
+                    <p class="fragment">Why is the compiler searching for <code>Equal[Serializable]</code>?</p>
+                </section>
+                <section>
+                    <h2>Typeclasses</h2>
                     <h5 class="fragment">Functor</h5>
                     <p class="fragment">A <code>Functor</code> is something which can be <i>mapped</i>:</p>
-                    TODO FROM HERE DOWN:
-                    scala> def mapper[F[+_], A, B](fa: F[A], func: A => B)(implicit functor: Functor[F]): F[B] =
-                    | functor.map(fa)(func)
-                    warning: there were 1 feature warning(s); re-run with -feature for details
-                    mapper: [F[+_], A, B](fa: F[A], func: A => B)(implicit functor: scalaz.Functor[F])F[B]
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+def addSix[F[_]](toAdd: F[Int])(implicit mapper: Functor[F]): F[Int] = {
+  mapper.map(toAdd)(_ + 6)
+}
+                    </code></pre>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> addSix(10.some)
+res0: Option[Int] = Some(16)
 
-                    scala> mapper(6.some, {i: Int => i + 4})
-                    res6: Option[Int] = Some(10)
+scala> addSix(List(10))
+res1: List[Int] = List(16)
+                    </code></pre>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> addSix(List(10, 11, 12, 13))
+res2: List[Int] = List(16, 17, 18, 19)
+                    </code></pre>
+                </section>
+                <section>
+                    <h2>Typeclasses</h2>
+                    <h5 class="fragment">Monoid</h5>
+                    <p class="fragment">A <code>Monoid</code> is a structure with an <i>associative binary operation</i> and an <i>identity element</i></p>
+                    <p class="fragment">Associative:</p>
+                    <p class="fragment">Given functions <code>f</code>, <code>g</code> and <code>h</code></p>
+                    <p class="fragment">For a variable <code>x</code>:</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+f(g(h(x)))
+                    </code></pre>
+                    <p class="fragment">is the same as</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+let y = (g(h(x));
+f(y)
+                    </code></pre>
+                    <p class="fragment">Addition, multiplication and string concatenation are all associative binary operations</p>
+                </section>
+                <section>
+                    <h2>Typeclasses</h2>
+                    <h5>Monoid</h5>
+                    <p class="fragment">Identity element:</p>
+                    <p class="fragment">When an element is used with the identity element in an associative binary operation, the operation returns the original element unchanged.</p>
+                    <p class="fragment">For addition, this is <code>zero</code>:</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+6 + 0 == 6
+                    </code></pre>
+                    <p class="fragment">For multiplication, this is <code>one</code>:</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+6 * 1 == 6
+                    </code></pre>
+                    <p class="fragment">For string concatenation, this is an empty string:</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+"cake".concat("") == "cake"
+                    </code></pre>
+                    <p class="fragment">What do you think the identity operation is for the binary associative operation <code>Integer.min</code>?</p>
+                </section>
+                <section>
+                    <h2>Typeclasses</h2>
+                    <h5>Monoid</h5>
+                    <p class="fragment">The Monoid typeclass definition in Scalaz is effectively:</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+trait Monoid[F] { self =>
+  def zero: F
 
-                    scala> mapper(List(123), {i: Int => i + 4})
-                    res7: List[Int] = List(127)
+  def append(f1: F, f2: => F): F
+  def |+|(f1: F, f2: => F): F = append(f1, f2)
+}
+                    </code></pre>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> 1 |+| 2 |+| 3
+res6: Int = 6
 
-                    Talk about how this higher-kinded polymorphism
+scala> 1.some |+| 2.some |+| 3.some
+res7: Option[Int] = Some(6)
+                    </code></pre>
+                </section>
+                <section>
+                    <h2>Typeclasses</h2>
+                    <h5>Monoid</h5>
+                    <p class="fragment">What do you think this returns?</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> val m1 = Map(1 -> List("A", "B", "C"), 2 -> List("AA", "BB"))
+m1: scala.collection.immutable.Map[Int,List[String]] = Map(1 -> List(A, B...
 
+scala> val m2 = Map(1 -> List("D"), 3 -> List("AAA"))
+m2: scala.collection.immutable.Map[Int,List[String]] = Map(1 -> List(D)...
+
+scala> m1 |+| m2
+                    </code></pre>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> m1 |+| m2
+res11: scala.collection.immutable.Map[Int,List[String]] =
+           Map(1 -> List(A, B, C, D), 3 -> List(AAA), 2 -> List(AA, BB))                    </code></pre>
+                </section>
+                <section>
+                    <h2>Typeclasses</h2>
+                    <h5>Monoid</h5>
+                    <h6 class="fragment">Exercise!</h6>
+                    <p class="fragment">Define a function, <code>collapseList</code>, which takes a <b>list of elements that has a monoid</b>, and returns the elements appended.</p>
+                    <p class="fragment">For example:</p>
+                    <pre class="fragment"><code data-trim contenteditable style="font-size: 18px; margin-top: 20px;">
+scala> collapseList(List(1, 2, 3, 4, 5))
+res12: Int = 15
+
+scala> collapseList(List("a", "bb", "ccc", "dddd"))
+res13: String = abbcccdddd
+                    </code></pre>
                 </section>
 				<!-- Example of nested vertical slides -->
 				<section>
